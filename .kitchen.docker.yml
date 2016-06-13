@@ -1,0 +1,91 @@
+settings:
+  parallel: true
+
+driver:
+  name: docker
+  # privileged is required otherwise the container doesn't boot right
+  privileged: true
+
+platforms:
+- name: centos-6
+  driver:
+    image: centos:6
+    platform: rhel
+    run_command: /sbin/init
+    provision_command:
+      - /usr/bin/yum install -y initscripts net-tools wget
+- name: centos-7
+  driver:
+    image: centos:7
+    platform: rhel
+    run_command: /usr/lib/systemd/systemd
+    provision_command:
+      - /bin/yum install -y initscripts net-tools wget
+- name: ubuntu-12.04
+  driver:
+    image: ubuntu-upstart:12.04
+    platform: ubuntu
+    disable_upstart: false
+    run_command: /sbin/init
+    provision_command:
+      - /usr/bin/apt-get update
+      - /usr/bin/apt-get install apt-transport-https net-tools -y
+- name: ubuntu-14.04
+  driver:
+    image: ubuntu-upstart:14.04
+    platform: ubuntu
+    disable_upstart: false
+    run_command: /sbin/init
+    provision_command:
+      - /usr/bin/apt-get update
+      - /usr/bin/apt-get install apt-transport-https net-tools -y
+
+suites:
+- name: server
+  run_list:
+    - recipe[openldap-test::default]
+    - recipe[openldap::server]
+    - recipe[openldap::auth]
+    - recipe[minitest-handler]
+  attributes:
+    openldap:
+      rootpw: "{SSHA}6BjlvtSbVCL88li8IorkqMSofkLio58/" # secretsauce
+      basedn: "dc=example, dc=com"
+      server: "ldap.example.com"
+      preseed_dir: "/tmp/does_not_exist"
+      ssl_cert_source_cookbook: "openldap-test"
+      ssl_cert_source_path: "ldap.example.com.pem"
+      ssl_key_source_cookbook: "openldap-test"
+      ssl_key_source_path: "ldap.example.com.key"
+- name: unmanaged_ssl
+  run_list:
+    - recipe[openldap-test::ssl]
+    - recipe[openldap::server]
+    - recipe[openldap::auth]
+    - recipe[minitest-handler]
+  attributes:
+    openldap:
+      rootpw: "{SSHA}6BjlvtSbVCL88li8IorkqMSofkLio58/" # secretsauce
+      basedn: "dc=example, dc=com"
+      server: "ldap.example.com"
+      manage_ssl: false
+      tls_checkpeer: true
+      pam_password: sha
+      ssl_dir: "/etc/ldap/ssl"
+      ssl_cert: "/etc/ldap/ssl/ldap.example.com.pem"
+      ssl_key: "/etc/ldap/ssl/ldap.example.com.pem"
+      cafile: "/etc/ldap/ssl/ldap.example.com.pem"
+- name: tls_disabled
+  run_list:
+  - recipe[openldap::server]
+  - recipe[openldap::auth]
+  - recipe[minitest-handler]
+  attributes:
+   openldap:
+     server: localhost
+     rootpw: "{SSHA}6BjlvtSbVCL88li8IorkqMSofkLio58/" # secretsauce
+     tls_enabled: false
+     passwd_ou: peeps
+     shadow_ou: ninjas
+     group_ou: pirates
+     automount_ou: barge

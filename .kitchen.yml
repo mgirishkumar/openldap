@@ -1,0 +1,72 @@
+driver:
+  name: vagrant
+
+provisioner:
+  name: chef_zero
+
+platforms:
+  - name: centos-6.7
+  - name: centos-7.2
+  - name: debian-7.10
+    run_list: apt::default
+  - name: debian-8.4
+    run_list: apt::default
+  - name: fedora-21
+  - name: fedora-22
+  - name: ubuntu-12.04
+    run_list: apt::default
+  - name: ubuntu-14.04
+    run_list: apt::default
+  - name: freebsd-10.1
+    run_list: freebsd::pkgng
+
+suites:
+- name: server
+  run_list:
+    - recipe[openldap-test::ssl]
+    - recipe[openldap::server]
+    - recipe[openldap::auth]
+    - recipe[group_addition]
+    - recipe[minitest-handler]
+  attributes:
+    openldap:
+      rootpw: "{SSHA}6BjlvtSbVCL88li8IorkqMSofkLio58/" # secretsauce
+      basedn: "dc=example, dc=com"
+      server: "ldap.example.com"
+      preseed_dir: "/tmp/does_not_exist"
+      ssl_cert_source_cookbook: "openldap-test"
+      ssl_cert_source_path: "ldap.example.com.pem"
+      ssl_key_source_cookbook: "openldap-test"
+      ssl_key_source_path: "ldap.example.com.key"
+- name: unmanaged_ssl
+  run_list:
+    - recipe[openldap-test::ssl]
+    - recipe[openldap::server]
+    - recipe[openldap::auth]
+    - recipe[minitest-handler]
+  attributes:
+    openldap:
+      rootpw: "{SSHA}6BjlvtSbVCL88li8IorkqMSofkLio58/" # secretsauce
+      basedn: "dc=example, dc=com"
+      server: "ldap.example.com"
+      manage_ssl: false
+      tls_checkpeer: true
+      pam_password: sha
+      ssl_dir: "/etc/ldap/ssl"
+      ssl_cert: "/etc/ldap/ssl/ldap.example.com.pem"
+      ssl_key: "/etc/ldap/ssl/ldap.example.com.pem"
+      cafile: "/etc/ldap/ssl/ldap.example.com.pem"
+- name: tls_disabled
+  run_list:
+  - recipe[openldap::server]
+  - recipe[openldap::auth]
+  - recipe[minitest-handler]
+  attributes:
+   openldap:
+     server: localhost
+     rootpw: "{SSHA}6BjlvtSbVCL88li8IorkqMSofkLio58/" # secretsauce
+     tls_enabled: false
+     passwd_ou: peeps
+     shadow_ou: ninjas
+     group_ou: pirates
+     automount_ou: barge
